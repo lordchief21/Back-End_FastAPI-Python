@@ -1,8 +1,13 @@
 from fastapi import FastAPI
+from routes import users
 
 
 
 app = FastAPI()
+
+
+#Generate autoroutes from routes files#
+app.include_router(users.routes)
 
 
 @app.get("/")

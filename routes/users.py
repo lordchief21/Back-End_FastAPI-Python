@@ -1,7 +1,9 @@
-from fastapi import FastAPI,HTTPException
+from fastapi import APIRouter,HTTPException
 from pydantic import BaseModel
 
-app = FastAPI()
+#El prefix funciona para definir el prefijo de la ruta que se está trabajando y refactorizar el código. El tag sirve para clasificar la ruta en la documentación SwaggerUI#
+routes = APIRouter(prefix= "/users",
+                   tags=["products"])  
 
 
 class User(BaseModel): #Esto es un BaseModel#
@@ -18,11 +20,11 @@ users_list = [
 ]
 
 
-@app.get("/users")
+@routes.get("/")
 async def usersForAPI():
     return users_list
 
-@app.get("/users/{name}") #Pasar parámetro por medio de una ruta #
+@routes.get("/{name}") #Pasar parámetro por medio de una ruta #
 async def user(name: str):
     usuario = filter(lambda user: user.name == name, users_list)
     try:
@@ -31,17 +33,17 @@ async def user(name: str):
         return {"MessageError": "No se encontró el usuario"}
 
 
-@app.post("/users/", status_code=200)
+@routes.post("/", status_code=200)
 async def user(user: User):
     
     if type(users_validate(user.name)) == User :
-        raise HTTPException(409,{"Message": "El usuario ya existe"})
+        raise HTTPException(409,{"Message": "El usuario ya existe"}) # Usamos el raise que para que suba la excepción al status code de la ruta#
     else:
         users_list.append(user)
         return {"Message": "El usuario se creó correctamente"}
     
 
-@app.put("/users/")
+@routes.put("/update")
 async def changeInfoUser(user: User):
     found = False
     for index, saved_user in enumerate(users_list):
@@ -53,7 +55,7 @@ async def changeInfoUser(user: User):
         return {"Message": "No se ha actualizado el usuario"}
     
 
-@app.delete("/users/delete/{name}")
+@routes.delete("/delete/{name}")
 async def deleteUser(name: str):
     found = False
     for index, user_saved in enumerate(users_list):
