@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 #El prefix funciona para definir el prefijo de la ruta que se está trabajando y refactorizar el código. El tag sirve para clasificar la ruta en la documentación SwaggerUI#
 routes = APIRouter(prefix= "/users",
-                   tags=["products"])  
+                   tags=["users"])  
 
 
 class User(BaseModel): #Esto es un BaseModel#
