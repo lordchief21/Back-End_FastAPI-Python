@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes import users,auth_basico
+from routes import users,auth_basico,jwt_authentication
 
 
 
@@ -9,6 +9,7 @@ app = FastAPI()
 #Generate autoroutes from routes files#
 app.include_router(users.routes)
 app.include_router(auth_basico.routes)
+app.include_router(jwt_authentication.routes)
 
 @app.get("/")
 async def root():
