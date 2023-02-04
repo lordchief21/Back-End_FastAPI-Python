@@ -52,7 +52,6 @@ def search_user_db(username: str):
     if username in users_db:
         return UserDB(**users_db[username]) # Los dobles asteriscos permiten Aceptar y pasar múltiples parámetros con nombre en una función. Mas Info -> https://www.codigopiton.com/como-usar-asterisco-y-doble-asterisco-en-python/#6-asterisco-doble-en-python #
 
-
 def search_user(username: str):
     if username in users_db:
         return User(**users_db[username])
