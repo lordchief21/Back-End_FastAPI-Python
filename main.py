@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes import users,auth_basico,jwt_authentication
+from routes import users,auth_basico,jwt_authentication, db_users
 
 
 
@@ -10,6 +10,7 @@ app = FastAPI()
 app.include_router(users.routes)
 app.include_router(auth_basico.routes)
 app.include_router(jwt_authentication.routes)
+app.include_router(db_users.routes)
 
 @app.get("/")
 async def root():

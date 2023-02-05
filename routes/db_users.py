@@ -1,6 +1,7 @@
 from fastapi import APIRouter,HTTPException,status
 from pydantic import BaseModel
 from db.models.userModel import User
+from db.schemas.userSchema import user_schema
 from db.client import client_db
 
 #El prefix funciona para definir el prefijo de la ruta que se está trabajando y refactorizar el código. El tag sirve para clasificar la ruta en la documentación SwaggerUI#
@@ -29,17 +30,14 @@ async def user(name: str):
 @routes.post("/",response_model=User, status_code=status.HTTP_200_OK)
 async def user(user: User):
     
-    if type(users_validate(user.name)) == User :
-        raise HTTPException(status.HTTP_404_NOT_FOUND,{"Message": "El usuario ya existe"}) # Usamos el raise que para que suba la excepción al status code de la ruta#
-    else:
-        user_dict = dict(user)
-        del user_dict["id"]        
-        id = client_db.local.users.insert_one(user_dict).inserted_id #Con esta línea agregamos usuarios a nuestros modelos y generamos un schema propio#
-        new_user = client_db.local.users.find_one({"_id":id}) # El guión bajo es porque MongoDb lo genera en automático asi #
-        
-         
-        
-        return {"Message": "El usuario se creó correctamente"}
+    user_dict = dict(user)
+    del user_dict["id"]        
+    id = client_db.local.users.insert_one(user_dict).inserted_id #Con esta línea agregamos usuarios a nuestros modelos y generamos un schema propio#  
+    
+    #Pasamos la función para generar el Schema#
+    new_user = user_schema(client_db.local.users.find_one({"_id":id})) # El guión bajo es porque MongoDb lo genera en automático asi #  
+    
+    return User(**new_user) #Recordenmos que los <<**>> son los llamados **kwargs
     
 
 @routes.put("/update")
