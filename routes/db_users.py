@@ -1,73 +1,92 @@
 from fastapi import APIRouter,HTTPException,status
 from pydantic import BaseModel
 from db.models.userModel import User
-from db.schemas.userSchema import user_schema
+from db.schemas.userSchema import user_schema,users_schema
 from db.client import client_db
+from bson import ObjectId
+
+
+
 
 #El prefix funciona para definir el prefijo de la ruta que se está trabajando y refactorizar el código. El tag sirve para clasificar la ruta en la documentación SwaggerUI#
 routes = APIRouter(prefix= "/usersdb",
                    tags=["usersdb"])  
 
 
+@routes.get("/", response_model=list[User])
+async def usersDb():
+    return users_schema(client_db.local.users.find())
 
-    
-users_list = []
 
-
-@routes.get("/")
-async def usersForAPI():
-    return users_list
-
-@routes.get("/{name}") #Pasar parámetro por medio de una ruta #
-async def user(name: str):
-    usuario = filter(lambda user: user.name == name, users_list)
-    try:
-        return list(usuario)[0]
-    except:
-        return {"MessageError": "No se encontró el usuario"}
+@routes.get("/{id}") #Pasar parámetro por medio de una ruta #
+async def userID(id: str):
+     return users_validate("_id", ObjectId(id))
 
 
 @routes.post("/",response_model=User, status_code=status.HTTP_200_OK)
 async def user(user: User):
     
+    if(type(users_validate("email", user.email))) == User:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Usuario ya existe")
+        
     user_dict = dict(user)
     del user_dict["id"]        
-    id = client_db.local.users.insert_one(user_dict).inserted_id #Con esta línea agregamos usuarios a nuestros modelos y generamos un schema propio#  
+    id = client_db.local.users.insert_one(user_dict).inserted_id  #Con esta línea agregamos usuarios a nuestros modelos y generamos un schema propio#  
     
     #Pasamos la función para generar el Schema#
-    new_user = user_schema(client_db.local.users.find_one({"_id":id})) # El guión bajo es porque MongoDb lo genera en automático asi #  
+    new_user = user_schema(client_db.local.users.find_one({"_id":id}))  # El guión bajo es porque MongoDb lo genera en automático asi #  
     
-    return User(**new_user) #Recordenmos que los <<**>> son los llamados **kwargs
+    return User(**new_user)  #Recordenmos que los <<**>> son los llamados **kwargs
     
 
-@routes.put("/update")
+@routes.put("/", response_model= User)
 async def changeInfoUser(user: User):
-    found = False
-    for index, saved_user in enumerate(users_list):
-        if saved_user.name == user.name:
-            users_list[index] = user
-            found = True
-            return {"Message": "Usuario actualizado con éxito"}    
-    if not found:
+    
+    user_dictionary = dict(user)
+    del user_dictionary["id"]
+    
+    try:
+        client_db.local.users.find_one_and_replace({"_id": ObjectId(user.id)}, user_dictionary)
+    except:
         return {"Message": "No se ha actualizado el usuario"}
     
+    return users_validate("_id", ObjectId(user.id))
 
-@routes.delete("/delete/{name}")
-async def deleteUser(name: str):
-    found = False
-    for index, user_saved in enumerate(users_list):
-        if user_saved.name == name:
-            del users_list[index]
-            found = True
-            return {"Message": "Usuario eliminado con éxito"}
-    if not found:
-         return {"Message": "No se ha eliminado el usuario"}
+    
+
+@routes.delete("/{id}")
+async def deleteUser(id: str, status_code= status.HTTP_204_NO_CONTENT):
+    try:
+        found = client_db.local.users.find_one_and_delete({"_id": ObjectId(id)})
+        return {"Message": "Usuario eliminado con éxito"}
+    except:
+        return {"Message": "No se ha eliminado el usuario"}
     
             
+
+ 
+#Utilizamos esta funcion para buscar por medio de el ObjectId o cualquier campo de MongoDb. Es mas genérico y ahorramos en código#
     
-def users_validate(name: str):
-    usuario = filter(lambda user: user.name == name, users_list)
+def users_validate(field: str, key):  #Dejamos el key genérico o sin el type_hint por si se envía un datatype distinto#
     try:
-        return list(usuario)[0]
+        findUser = user_schema(client_db.local.users.find_one({field: key}))
+        return User(**findUser)
     except:
         return {"MessageError": "No se encontró el usuario"}
+    
+    
+    
+    
+
+
+"""
+Utilizamos esta funcion para buscar por medio del email contenido en MongoDb    
+
+def users_validate(email: str):
+    try:
+        findEmail = user_schema(client_db.local.users.find_one({"email":email}))
+        return User(**findEmail)
+    except:
+        return {"MessageError": "No se encontró el usuario"}
+"""
