@@ -1,7 +1,9 @@
 from pymongo import MongoClient
 
-client_db = MongoClient()
+#Base de datos de manera local#
+#client_db = MongoClient().local
 
-
+#Base de datos de manera remota ( C/Atlas)
+client_db = MongoClient("Inserta tu Url aqui de MondoDB Atlas").test
 
 
